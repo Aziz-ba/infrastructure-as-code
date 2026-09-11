@@ -1,0 +1,9 @@
+# NEVER commit secrets or state
+credentials
+*.tfstate
+*.tfstate.*
+.terraform/
+*.pem
+*.key
+.DS_Store
+inventory.ini
