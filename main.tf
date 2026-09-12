@@ -1,27 +1,27 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
+locals {
+  # The two tiers, provisioned from one definition via for_each.
+  servers = {
+    nginx   = "web tier (NGINX)"
+    php_fpm = "app tier (PHP-FPM)"
+  }
+  tags = {
+    Project   = var.project_name
+    ManagedBy = "terraform"
   }
 }
 
-provider "aws" {
-  region = "us-west-1"  # Remplace par ta région AWS
-}
-
-# Clé SSH pour les instances
 resource "aws_key_pair" "deployer" {
-  key_name   = "deployer_key"
-  public_key = file("~/.ssh/id_rsa.pub")  # Assure-toi d'avoir généré une clé SSH
+  key_name   = "${var.project_name}-deployer"
+  public_key = file(var.ssh_public_key_path)
+  tags       = local.tags
 }
 
-# Groupe de sécurité pour les instances
-resource "aws_security_group" "web_sg" {
-  name_prefix = "web_security_group"
+resource "aws_security_group" "web" {
+  name_prefix = "${var.project_name}-sg-"
+  description = "HTTP from anywhere, SSH from allowed_ssh_cidr"
 
   ingress {
+    description = "HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -29,10 +29,11 @@ resource "aws_security_group" "web_sg" {
   }
 
   ingress {
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.allowed_ssh_cidr]
   }
 
   egress {
@@ -41,29 +42,20 @@ resource "aws_security_group" "web_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = local.tags
 }
 
-# Instance EC2 pour NGINX
-resource "aws_instance" "nginx" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Remplace par une AMI compatible dans ta région
-  instance_type = "t2.micro"
-  key_name      = aws_key_pair.deployer.key_name
-  vpc_security_group_ids = [aws_security_group.web_sg.id]
+resource "aws_instance" "server" {
+  for_each = local.servers
 
-  tags = {
-    Name = "nginx_server"
-  }
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.deployer.key_name
+  vpc_security_group_ids = [aws_security_group.web.id]
+
+  tags = merge(local.tags, {
+    Name = "${var.project_name}-${each.key}"
+    Role = each.value
+  })
 }
-
-# Instance EC2 pour PHP-FPM
-resource "aws_instance" "php_fpm" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Remplace par une AMI compatible dans ta région
-  instance_type = "t2.micro"
-  key_name      = aws_key_pair.deployer.key_name
-  vpc_security_group_ids = [aws_security_group.web_sg.id]
-
-  tags = {
-    Name = "php_fpm_server"
-  }
-}
-
