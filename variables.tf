@@ -32,4 +32,9 @@ variable "allowed_ssh_cidr" {
   description = "CIDR allowed to reach SSH (22). Lock this to your IP in production."
   type        = string
   default     = "0.0.0.0/0"
+
+  validation {
+    condition     = can(cidrnetmask(var.allowed_ssh_cidr))
+    error_message = "The allowed_ssh_cidr value must be a valid IPv4 CIDR block."
+  }
 }
