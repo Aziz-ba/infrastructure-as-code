@@ -5,7 +5,7 @@ output "public_ips" {
 
 output "ansible_inventory_hint" {
   description = "Paste these IPs into inventory.ini for the Ansible step."
-  value = <<-EOT
+  value       = <<-EOT
     [nginx]
     ${aws_instance.server["nginx"].public_ip}
 
