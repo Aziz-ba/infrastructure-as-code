@@ -34,6 +34,8 @@ variable "allowed_ssh_cidr" {
   default     = "0.0.0.0/0"
 
   validation {
+    # cidrnetmask() parses IPv4 CIDR notation and errors on invalid strings;
+    # can() catches errors and returns false to enforce valid CIDR syntax.
     condition     = can(cidrnetmask(var.allowed_ssh_cidr))
     error_message = "The allowed_ssh_cidr value must be a valid IPv4 CIDR block."
   }
