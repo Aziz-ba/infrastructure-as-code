@@ -8,6 +8,11 @@ variable "project_name" {
   description = "Prefix applied to resource names and tags."
   type        = string
   default     = "iac-web"
+
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9-]+$", var.project_name)) && var.project_name != ""
+    error_message = "The project_name must be non-empty and contain only alphanumeric characters and hyphens."
+  }
 }
 
 variable "instance_type" {
