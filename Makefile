@@ -15,5 +15,6 @@ apply:      ## Provision the infrastructure
 destroy:    ## Tear everything down
 	terraform destroy
 
-configure:  ## Run the Ansible playbook (fill inventory.ini first)
+configure:  ## Generate inventory and run the Ansible playbook
+	terraform output -raw ansible_inventory_hint > inventory.ini
 	ansible-playbook -i inventory.ini setup.yml
